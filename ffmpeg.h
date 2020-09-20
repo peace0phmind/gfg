@@ -28,20 +28,20 @@
 
 #include "cmdutils.h"
 
-#include <libavformat/avformat.h>
-#include <libavformat/avio.h>
+#include "libavformat/avformat.h"
+#include "libavformat/avio.h"
 
-#include <libavcodec/avcodec.h>
+#include "libavcodec/avcodec.h"
 
-#include <libavfilter/avfilter.h>
+#include "libavfilter/avfilter.h"
 
-#include <libavutil/avutil.h>
-#include <libavutil/dict.h>
-#include <libavutil/eval.h>
-#include <libavutil/fifo.h>
-#include <libavutil/hwcontext.h>
-#include <libavutil/pixfmt.h>
-#include <libavutil/rational.h>
+#include "libavutil/avutil.h"
+#include "libavutil/dict.h"
+#include "libavutil/eval.h"
+#include "libavutil/fifo.h"
+#include "libavutil/hwcontext.h"
+#include "libavutil/pixfmt.h"
+#include "libavutil/rational.h"
 #include "libavutil/thread.h"
 #include "libavutil/threadmessage.h"
 
@@ -572,7 +572,7 @@ typedef struct BenchmarkTimeStamps {
 } BenchmarkTimeStamps;
 
 struct GFFmpegContext {
-    void         *debug_p;
+    void         *user_data;
     AVDictionary *sws_dict;
     AVDictionary *swr_opts;
 
@@ -715,6 +715,7 @@ int hw_device_setup_for_filter(GFFmpegContext *gc, FilterGraph *fg);
 
 int hwaccel_decode_init(AVCodecContext *avctx);
 
-int execute_g_ffmpeg(char *cmdline);
+GFFmpegContext *g_ffmpeg_context_init();
+int execute_g_ffmpeg(GFFmpegContext *gc, char *cmdline);
 
 #endif /* FFTOOLS_FFMPEG_H */

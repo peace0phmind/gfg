@@ -55,7 +55,6 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avstring.h"
-//#include "libavutil/libm.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/timestamp.h"
 #include "libavutil/bprint.h"
@@ -4674,7 +4673,7 @@ static void log_callback_null(void *ptr, int level, const char *fmt, va_list vl)
 {
 }
 
-GFFmpegContext * getInitedGFFmpegContext() {
+GFFmpegContext * g_ffmpeg_context_init() {
     GFFmpegContext *gc = av_mallocz(sizeof(GFFmpegContext));
     gc->audio_drift_threshold = 0.1;
     gc->dts_delta_threshold   = 10;
@@ -4735,11 +4734,10 @@ GFFmpegContext * getInitedGFFmpegContext() {
     return gc;
 }
 
-static int _main(int argc, char **argv)
+static int _main(GFFmpegContext *gc, int argc, char **argv)
 {
     int i, ret;
     BenchmarkTimeStamps ti;
-    GFFmpegContext *gc = getInitedGFFmpegContext();
 
     init_dynload();
 
@@ -4849,16 +4847,16 @@ static void freeparsedargs(char **argv)
     }
 }
 
-int execute_g_ffmpeg(char *cmdline) {
+int execute_g_ffmpeg(GFFmpegContext *gc, char *cmdline) {
     int argc = 0;
     char **argv;
     int ret;
     argv = parsedargs(cmdline, &argc);
-    ret = _main(argc, argv);
+    ret = _main(gc, argc, argv);
     freeparsedargs(argv);
     return ret;
 }
 
 //int main(int argc, char **argv) {
-//    return _main(argc, argv);
+//    return _main(g_ffmpeg_context_init(), argc, argv);
 //}

@@ -30,11 +30,9 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
-#include "libavutil/display.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
-#include "libavutil/imgutils.h"
 #include "libavutil/samplefmt.h"
 
 static const enum AVPixelFormat *get_compliance_unofficial_pix_fmts(enum AVCodecID codec_id, const enum AVPixelFormat default_formats[])

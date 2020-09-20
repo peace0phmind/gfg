@@ -18,7 +18,6 @@
 
 #include <string.h>
 
-#include "libavutil/avstring.h"
 #include "libavutil/pixdesc.h"
 #include "libavfilter/buffersink.h"
 
