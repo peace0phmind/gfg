@@ -572,9 +572,7 @@ typedef struct BenchmarkTimeStamps {
 } BenchmarkTimeStamps;
 
 struct GFFmpegContext {
-    char        buf1[1024];
     sigjmp_buf   _jmp_buf;
-    char        buf2[1024];
     void         *user_data;
     AVDictionary *sws_dict;
     AVDictionary *swr_opts;

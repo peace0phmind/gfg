@@ -54,6 +54,9 @@ func (g *Gffmpeg) Run() error {
 	g.setCallback()
 
 	C.execute_g_ffmpeg(g.gc, c_cmd)
+
+	C.av_free(g.gc);
+
 	g.running = false
 
 	return nil

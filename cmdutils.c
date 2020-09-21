@@ -98,7 +98,6 @@ void exit_program(GFFmpegContext *gc, int ret)
     if (gc->program_exit)
         gc->program_exit(gc, ret);
 
-    av_free(gc);
     av_log(NULL, AV_LOG_INFO, "Program exit with ret: %d.\n", ret);
     longjmp(gc->_jmp_buf, ret == 0 ? JUMP_BUFFER_SUCCESS : ret);
 }
