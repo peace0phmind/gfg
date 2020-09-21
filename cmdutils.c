@@ -100,7 +100,7 @@ void exit_program(GFFmpegContext *gc, int ret)
 
     av_free(gc);
     av_log(NULL, AV_LOG_INFO, "Program exit with ret: %d.\n", ret);
-    siglongjmp(_jmp_buf, ret == 0 ? JUMP_BUFFER_SUCCESS : ret);
+    longjmp(gc->_jmp_buf, ret == 0 ? JUMP_BUFFER_SUCCESS : ret);
 }
 
 double parse_number_or_die(GFFmpegContext *gc, const char *context, const char *numstr, int type,

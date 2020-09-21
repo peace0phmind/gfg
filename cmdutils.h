@@ -37,10 +37,7 @@
 
 #define JUMP_BUFFER_SUCCESS 0x88888888
 
-sigjmp_buf _jmp_buf;
-
 typedef struct GFFmpegContext GFFmpegContext;
-
 
 /**
  * Register a program-specific cleanup routine.
