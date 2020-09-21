@@ -668,12 +668,14 @@ struct GFFmpegContext {
     int ignore_unknown_streams;
     int copy_unknown_streams;
     int find_stream_info;
+
+    // add for gfg golang
+    int write_packet;
+    void (*cb_write_packet)(GFFmpegContext *gc, AVPacket *pkt);
 };
 
 extern const OptionDef options[];
 extern const HWAccel hwaccels[];
-
-void term_exit(GFFmpegContext *gc);
 
 void reset_options(OptionsContext *o, int is_input);
 void show_usage(void);

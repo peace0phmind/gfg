@@ -948,7 +948,6 @@ static void assert_file_overwrite(GFFmpegContext *gc, const char *filename)
             if (gc->stdin_interaction && !gc->no_file_overwrite) {
                 fprintf(stderr,"File '%s' already exists. Overwrite? [y/N] ", filename);
                 fflush(stderr);
-                term_exit(gc);
                 signal(SIGINT, SIG_DFL);
                 if (!read_yesno()) {
                     av_log(NULL, AV_LOG_FATAL, "Not overwriting - exiting\n");

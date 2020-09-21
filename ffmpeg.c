@@ -277,15 +277,6 @@ static void sub2video_flush(InputStream *ist)
 }
 
 /* end of sub2video hack */
-static void term_exit_sigsafe(GFFmpegContext *gc)
-{
-}
-
-void term_exit(GFFmpegContext *gc)
-{
-    av_log(NULL, AV_LOG_QUIET, "%s", "");
-    term_exit_sigsafe(gc);
-}
 
 /* read a key without blocking */
 static int read_key(void)
@@ -497,7 +488,6 @@ static void ffmpeg_cleanup(GFFmpegContext *gc, int ret)
     } else if (ret && atomic_load(&gc->transcode_init_done)) {
         av_log(NULL, AV_LOG_INFO, "Conversion failed!\n");
     }
-    term_exit(gc);
     gc->ffmpeg_exited = 1;
 }
 
@@ -554,8 +544,7 @@ static void close_all_output_streams(GFFmpegContext *gc, OutputStream *ost, OSTF
     }
 }
 
-static void write_packet(GFFmpegContext *gc, OutputFile *of, AVPacket *pkt, OutputStream *ost, int unqueue)
-{
+static void write_packet(GFFmpegContext *gc, OutputFile *of, AVPacket *pkt, OutputStream *ost, int unqueue) {
     AVFormatContext *s = of->ctx;
     AVStream *st = ost->st;
     int ret;
@@ -611,9 +600,9 @@ static void write_packet(GFFmpegContext *gc, OutputFile *of, AVPacket *pkt, Outp
         ost->quality = sd ? AV_RL32(sd) : -1;
         ost->pict_type = sd ? sd[4] : AV_PICTURE_TYPE_NONE;
 
-        for (i = 0; i<FF_ARRAY_ELEMS(ost->error); i++) {
+        for (i = 0; i < FF_ARRAY_ELEMS(ost->error); i++) {
             if (sd && i < sd[5])
-                ost->error[i] = AV_RL64(sd + 8 + 8*i);
+                ost->error[i] = AV_RL64(sd + 8 + 8 * i);
             else
                 ost->error[i] = -1;
         }
@@ -632,32 +621,35 @@ static void write_packet(GFFmpegContext *gc, OutputFile *of, AVPacket *pkt, Outp
         if (pkt->dts != AV_NOPTS_VALUE &&
             pkt->pts != AV_NOPTS_VALUE &&
             pkt->dts > pkt->pts) {
-            av_log(s, AV_LOG_WARNING, "Invalid DTS: %"PRId64" PTS: %"PRId64" in output stream %d:%d, replacing by guess\n",
+            av_log(s, AV_LOG_WARNING,
+                   "Invalid DTS: %"PRId64" PTS: %"PRId64" in output stream %d:%d, replacing by guess\n",
                    pkt->dts, pkt->pts,
                    ost->file_index, ost->st->index);
             pkt->pts =
             pkt->dts = pkt->pts + pkt->dts + ost->last_mux_dts + 1
-                     - FFMIN3(pkt->pts, pkt->dts, ost->last_mux_dts + 1)
-                     - FFMAX3(pkt->pts, pkt->dts, ost->last_mux_dts + 1);
+                       - FFMIN3(pkt->pts, pkt->dts, ost->last_mux_dts + 1)
+                       - FFMAX3(pkt->pts, pkt->dts, ost->last_mux_dts + 1);
         }
-        if ((st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO || st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) &&
+        if ((st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
+             st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) &&
             pkt->dts != AV_NOPTS_VALUE &&
             !(st->codecpar->codec_id == AV_CODEC_ID_VP9 && ost->stream_copy) &&
             ost->last_mux_dts != AV_NOPTS_VALUE) {
             int64_t max = ost->last_mux_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT);
             if (pkt->dts < max) {
-                int loglevel = max - pkt->dts > 2 || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ? AV_LOG_WARNING : AV_LOG_DEBUG;
+                int loglevel = max - pkt->dts > 2 || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ? AV_LOG_WARNING
+                                                                                                    : AV_LOG_DEBUG;
                 if (gc->exit_on_error)
                     loglevel = AV_LOG_ERROR;
                 av_log(s, loglevel, "Non-monotonous DTS in output stream "
-                       "%d:%d; previous: %"PRId64", current: %"PRId64"; ",
+                                    "%d:%d; previous: %"PRId64", current: %"PRId64"; ",
                        ost->file_index, ost->st->index, ost->last_mux_dts, pkt->dts);
                 if (gc->exit_on_error) {
                     av_log(NULL, AV_LOG_FATAL, "aborting.\n");
                     exit_program(gc, 1);
                 }
                 av_log(s, loglevel, "changing to %"PRId64". This may result "
-                       "in incorrect timestamps in the output file.\n",
+                                    "in incorrect timestamps in the output file.\n",
                        max);
                 if (pkt->pts >= pkt->dts)
                     pkt->pts = FFMAX(pkt->pts, max);
@@ -674,20 +666,27 @@ static void write_packet(GFFmpegContext *gc, OutputFile *of, AVPacket *pkt, Outp
 
     if (gc->debug_ts) {
         av_log(NULL, AV_LOG_INFO, "muxer <- type:%s "
-                "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s size:%d\n",
-                av_get_media_type_string(ost->enc_ctx->codec_type),
-                av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ost->st->time_base),
-                av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ost->st->time_base),
-                pkt->size
-              );
+                                  "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s size:%d\n",
+               av_get_media_type_string(ost->enc_ctx->codec_type),
+               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ost->st->time_base),
+               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ost->st->time_base),
+               pkt->size
+        );
     }
 
-    ret = av_interleaved_write_frame(s, pkt);
-    if (ret < 0) {
-        print_error("av_interleaved_write_frame()", ret);
-        gc->main_return_code = 1;
-        close_all_output_streams(gc, ost, MUXER_FINISHED | ENCODER_FINISHED, ENCODER_FINISHED);
+    if (gc->cb_write_packet && gc->user_data) {
+        gc->cb_write_packet(gc, pkt);
     }
+
+    if (gc->write_packet) {
+        ret = av_interleaved_write_frame(s, pkt);
+        if (ret < 0) {
+            print_error("av_interleaved_write_frame()", ret);
+            gc->main_return_code = 1;
+            close_all_output_streams(gc, ost, MUXER_FINISHED | ENCODER_FINISHED, ENCODER_FINISHED);
+        }
+    }
+
     av_packet_unref(pkt);
 }
 
@@ -4541,8 +4540,6 @@ static int transcode(GFFmpegContext *gc)
     }
     flush_encoders(gc);
 
-    term_exit(gc);
-
     /* write the trailer if needed and close file */
     for (i = 0; i < gc->nb_output_files; i++) {
         os = gc->output_files[i]->ctx;
@@ -4730,6 +4727,9 @@ GFFmpegContext * g_ffmpeg_context_init() {
     gc->ignore_unknown_streams = 0;
     gc->copy_unknown_streams = 0;
     gc->find_stream_info = 1;
+
+    // add for gfg golang
+    gc->write_packet = 1;
 
     return gc;
 }
