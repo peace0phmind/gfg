@@ -55,7 +55,7 @@ func (g *Gffmpeg) Run() error {
 
 	C.execute_g_ffmpeg(g.gc, c_cmd)
 
-	C.av_free(g.gc);
+	C.av_free(unsafe.Pointer(g.gc))
 
 	g.running = false
 
