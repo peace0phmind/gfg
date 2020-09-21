@@ -23,6 +23,7 @@
 #define FFTOOLS_CMDUTILS_H
 
 #include <stdint.h>
+#include <setjmp.h>
 
 #include "config.h"
 #include "libavcodec/avcodec.h"
@@ -33,6 +34,10 @@
 #ifdef _WIN32
 #undef main /* We don't want SDL to override our main() */
 #endif
+
+#define JUMP_BUFFER_SUCCESS 0x88888888
+
+sigjmp_buf _jmp_buf;
 
 typedef struct GFFmpegContext GFFmpegContext;
 

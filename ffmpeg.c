@@ -4847,16 +4847,33 @@ static void freeparsedargs(char **argv)
     }
 }
 
+static int __main(GFFmpegContext *gc, int argc, char **argv) {
+    int ret;
+
+    ret = sigsetjmp(_jmp_buf, 3);
+    switch (ret) {
+        case 0:
+            ret = _main(gc, argc, argv);
+            break;
+        case JUMP_BUFFER_SUCCESS:
+            ret = 0;
+            break;
+        default:
+            av_log(NULL, AV_LOG_ERROR, "main return error with code: %d", ret);
+    }
+    return ret;
+}
+
 int execute_g_ffmpeg(GFFmpegContext *gc, char *cmdline) {
     int argc = 0;
     char **argv;
     int ret;
     argv = parsedargs(cmdline, &argc);
-    ret = _main(gc, argc, argv);
+    ret = __main(gc, argc, argv);
     freeparsedargs(argv);
     return ret;
 }
 
 //int main(int argc, char **argv) {
-//    return _main(g_ffmpeg_context_init(), argc, argv);
+//    return __main(g_ffmpeg_context_init(), argc, argv);
 //}
