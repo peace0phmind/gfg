@@ -1,7 +1,6 @@
 package main
 
 
-import "C"
 import (
 	"github.com/peace0phmind/gfg"
 	"log"

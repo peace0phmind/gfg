@@ -4875,6 +4875,6 @@ int execute_g_ffmpeg(GFFmpegContext *gc, char *cmdline) {
     return ret;
 }
 
-int main(int argc, char **argv) {
-    return __main(g_ffmpeg_context_init(), argc, argv);
-}
+//int main(int argc, char **argv) {
+//    return __main(g_ffmpeg_context_init(), argc, argv);
+//}

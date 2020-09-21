@@ -14,7 +14,7 @@ import (
 	"unsafe"
 )
 
-type gffmpeg struct {
+type Gffmpeg struct {
 	cmd string
 	cb interface{}
     gc *C.struct_GFFmpegContext
@@ -22,11 +22,11 @@ type gffmpeg struct {
 	writePacket bool
 }
 
-func NewGfg(cmd string, writePacket bool, cb interface{}) *gffmpeg {
-	return &gffmpeg{cmd: cmd, writePacket:writePacket, cb: cb, running: false}
+func NewGfg(cmd string, writePacket bool, cb interface{}) *Gffmpeg {
+	return &Gffmpeg{cmd: cmd, writePacket:writePacket, cb: cb, running: false}
 }
 
-func (g *gffmpeg) setCallback() {
+func (g *Gffmpeg) setCallback() {
 	if g.cb != nil {
 		g.gc.user_data = unsafe.Pointer(g)
 
@@ -36,7 +36,7 @@ func (g *gffmpeg) setCallback() {
 	}
 }
 
-func (g *gffmpeg) Run() error {
+func (g *Gffmpeg) Run() error {
 	if g.running {
 		return errors.New("gfg is already running.")
 	}
@@ -59,9 +59,9 @@ func (g *gffmpeg) Run() error {
 	return nil
 }
 
-func (g *gffmpeg) Exit() error {
+func (g *Gffmpeg) Stop() error {
 	if !g.running {
-		return errors.New("gfg must run before exit")
+		return errors.New("gfg must run before stop")
 	}
 
 	if g.gc != nil {
@@ -69,9 +69,9 @@ func (g *gffmpeg) Exit() error {
 		return nil
 	}
 
-	return errors.New("gc must be init before exit")
+	return errors.New("gc must be init before stop")
 }
 
-func (g *gffmpeg) IsRunning() bool {
+func (g *Gffmpeg) IsRunning() bool {
 	return g.running
 }

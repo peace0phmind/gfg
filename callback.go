@@ -44,7 +44,7 @@ type CallbackWritePacket interface {
 
 //export callback_write_packet
 func callback_write_packet(gc *C.struct_GFFmpegContext, pkt *C.struct_AVPacket) {
-	g := (*gffmpeg)(gc.user_data)
+	g := (*Gffmpeg)(gc.user_data)
 	if callback, ok := g.cb.(CallbackWritePacket); ok {
 		p := &Packet{avPacket: pkt}
 		callback.WritePacket(p)
