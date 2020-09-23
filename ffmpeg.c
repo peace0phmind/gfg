@@ -4882,4 +4882,4 @@ int main(int argc, char **argv) {
     av_free(gc);
     return ret;
 }
-#endif //end cgo
+#endif //USE_FOR_LIB
