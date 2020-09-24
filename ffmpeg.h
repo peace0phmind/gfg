@@ -673,6 +673,12 @@ struct GFFmpegContext {
     // add for gfg golang
     int write_packet;
     void (*cb_write_packet)(GFFmpegContext *gc, AVPacket *pkt);
+
+    // last error info
+    int last_error;
+#define LAST_ERROR_BUF_SIZE 256
+    char last_error_buf[LAST_ERROR_BUF_SIZE];
+    char *last_error_ptr;
 };
 
 extern const OptionDef options[];

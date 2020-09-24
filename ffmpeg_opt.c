@@ -1118,8 +1118,8 @@ static int open_input_file(GFFmpegContext *gc, OptionsContext *o, const char *fi
     if (err < 0) {
         print_error(filename, err);
         if (err == AVERROR_PROTOCOL_NOT_FOUND)
-            av_log(NULL, AV_LOG_ERROR, "Did you mean file:%s?\n", filename);
-        exit_program(gc, 1);
+            av_log(NULL, AV_LOG_ERROR, "Drid you mean file:%s?\n", filename);
+        exit_program(gc, err);
     }
     if (scan_all_pmts_set)
         av_dict_set(&o->g->format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);

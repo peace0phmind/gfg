@@ -99,6 +99,16 @@ void exit_program(GFFmpegContext *gc, int ret)
         gc->program_exit(gc, ret);
 
     av_log(NULL, AV_LOG_INFO, "Program exit with ret: %d.\n", ret);
+
+    gc->last_error = ret;
+
+    if (ret < 0) {
+        gc->last_error_ptr = NULL;
+        if (av_strerror(ret, gc->last_error_buf, LAST_ERROR_BUF_SIZE) < 0) {
+            gc->last_error_ptr = strerror(AVUNERROR(ret));
+        }
+    }
+
     longjmp(gc->_jmp_buf, ret == 0 ? JUMP_BUFFER_SUCCESS : ret);
 }
 

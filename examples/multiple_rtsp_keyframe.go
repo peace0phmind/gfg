@@ -42,7 +42,7 @@ func (c *RtspBackTest) WritePacket(pkt *gfg.Packet) {
 
 func main() {
 	r0 := &RtspBackTest{Code: "001", Running : true}
-	g0 := gfg.NewGfg("-rtsp_transport tcp -i rtsp://admin:Zyx123456@192.168.1.10 -vf select='eq(pict_type\\,I)' test%03d.jpeg", false, r0)
+	g0 := gfg.NewGfgWithCb("-rtsp_transport tcp -i rtsp://admin:Zyx123456@192.168.1.10 -vf select='eq(pict_type\\,I)' test%03d.jpeg", false, r0)
 	r0.Gc = g0
 
 	go func() {
@@ -53,7 +53,7 @@ func main() {
 	}()
 
 	r1 := &RtspBackTest{Code: "002", Running: true}
-	g1 := gfg.NewGfg("-rtsp_transport tcp -i rtsp://admin:Zyx123456@192.168.1.11 -vf select='eq(pict_type\\,I)' test%03d.jpeg", false, r1)
+	g1 := gfg.NewGfgWithCb("-rtsp_transport tcp -i rtsp://admin:Zyx123456@192.168.1.11 -vf select='eq(pict_type\\,I)' test%03d.jpeg", false, r1)
 	r1.Gc = g1
 
 	go func() {

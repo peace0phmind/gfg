@@ -7,23 +7,28 @@ extern void callback_write_packet(GFFmpegContext *gc, AVPacket *pkt);
 void set_cb_write_packet(GFFmpegContext *gc) {
 	gc->cb_write_packet = callback_write_packet;
 }
- */
+*/
 import "C"
 import (
 	"errors"
+	"fmt"
 	"unsafe"
 )
 
 type Gffmpeg struct {
-	cmd string
-	cb interface{}
-    gc *C.struct_GFFmpegContext
-	running bool
+	cmd         string
+	cb          interface{}
+	gc          *C.struct_GFFmpegContext
+	running     bool
 	writePacket bool
 }
 
-func NewGfg(cmd string, writePacket bool, cb interface{}) *Gffmpeg {
-	return &Gffmpeg{cmd: cmd, writePacket:writePacket, cb: cb, running: false}
+func NewGfg(cmd string) *Gffmpeg {
+	return &Gffmpeg{cmd: cmd, writePacket: true, running: false}
+}
+
+func NewGfgWithCb(cmd string, writePacket bool, cb interface{}) *Gffmpeg {
+	return &Gffmpeg{cmd: cmd, writePacket: true, cb: cb, running: false}
 }
 
 func (g *Gffmpeg) setCallback() {
@@ -45,21 +50,16 @@ func (g *Gffmpeg) Run() error {
 	c_cmd := C.CString("gfg " + g.cmd)
 	defer C.free(unsafe.Pointer(c_cmd))
 
-	g.gc = C.g_ffmpeg_context_init()
+	g.initGc()
+	defer g.cleanGc()
 
-	if !g.writePacket {
-		g.gc.write_packet = 0
+	ret := C.execute_g_ffmpeg(g.gc, c_cmd)
+
+	if ret == 0 {
+		return nil
+	} else {
+		return g.getError()
 	}
-
-	g.setCallback()
-
-	C.execute_g_ffmpeg(g.gc, c_cmd)
-
-	C.av_free(unsafe.Pointer(g.gc))
-
-	g.running = false
-
-	return nil
 }
 
 func (g *Gffmpeg) Stop() error {
@@ -77,4 +77,43 @@ func (g *Gffmpeg) Stop() error {
 
 func (g *Gffmpeg) IsRunning() bool {
 	return g.running
+}
+
+func (g *Gffmpeg) SetWritePacket(writePacket bool) {
+	g.writePacket = writePacket
+}
+
+func (g *Gffmpeg) SetCallback(cb interface{}) {
+	g.cb = cb
+}
+
+func (g *Gffmpeg) initGc() {
+	g.gc = C.g_ffmpeg_context_init()
+
+	if g.writePacket {
+		g.gc.write_packet = 1
+	} else {
+		g.gc.write_packet = 0
+	}
+
+	g.setCallback()
+}
+
+func (g *Gffmpeg) cleanGc() {
+	C.av_free(unsafe.Pointer(g.gc))
+	g.running = false
+}
+
+func (g *Gffmpeg) getError() error {
+	if g.gc.last_error == 0 {
+		return nil
+	} else if g.gc.last_error < 0 {
+		if g.gc.last_error_ptr == nil {
+			return errors.New(C.GoString(&g.gc.last_error_buf[0]))
+		} else {
+			return errors.New(C.GoString(g.gc.last_error_ptr))
+		}
+	} else {
+		return errors.New(fmt.Sprintf("gfg get error no: %d", g.gc.last_error))
+	}
 }

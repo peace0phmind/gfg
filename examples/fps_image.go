@@ -1,6 +1,5 @@
 package main
 
-
 import (
 	"github.com/peace0phmind/gfg"
 	"log"
@@ -14,7 +13,9 @@ func (c *CallBackTest) WritePacket(pkt *gfg.Packet) {
 }
 
 func main() {
-	g := gfg.NewGfg("-loglevel error -i /home/test/go/src/github.com/peace0phmind/gmf/examples/bbb.mp4 -vf fps=fps=1/5 test%03d.jpeg", false, &CallBackTest{})
+	g := gfg.NewGfg("-loglevel error -i /home/test/go/src/github.com/peace0phmind/gmf/examples/bbb.mp4 -vf fps=fps=1/5 test%03d.jpeg")
+	g.SetWritePacket(false)
+	g.SetCallback(&CallBackTest{})
 
 	g.Run()
 }
