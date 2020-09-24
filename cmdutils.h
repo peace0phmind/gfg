@@ -196,8 +196,8 @@ typedef struct OptionDef {
  * argument without a leading option name flag. NULL if such arguments do
  * not have to be processed.
  */
-void parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
-                   void (* parse_arg_function)(void *optctx, const char*));
+void parse_options(GFFmpegContext *gc, void *optctx, int argc, char **argv, const OptionDef *options,
+                   void (* parse_arg_function)(GFFmpegContext *, void *optctx, const char*));
 
 /**
  * Parse one given option.
@@ -433,5 +433,11 @@ void *grow_array(GFFmpegContext *gc, void *array, int elem_size, int *size, int 
     av_get_channel_layout_string(name, sizeof(name), 0, ch_layout);
 
 double get_rotation(AVStream *st);
+
+#define G_OFFSET(x) offsetof(GFFmpegContext, x)
+
+char **parsedargs(char *args, int *argc);
+void freeparsedargs(char **argv);
+int enter_program(GFFmpegContext *gc, int argc, char **argv, int (*main_func)(GFFmpegContext *gc, int argc, char **argv));
 
 #endif /* FFTOOLS_CMDUTILS_H */

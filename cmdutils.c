@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <math.h>
+#include <ctype.h>
 
 /* Include only the enabled headers since some compilers (namely, Sun
    Studio) will not omit unused inline functions and create undefined
@@ -1068,3 +1069,180 @@ double get_rotation(AVStream *st)
     return theta;
 }
 
+void parse_options(GFFmpegContext *gc, void *optctx, int argc, char **argv, const OptionDef *options,
+                   void (*parse_arg_function)(GFFmpegContext *, void *, const char*))
+{
+    const char *opt;
+    int optindex, handleoptions = 1, ret;
+
+    /* perform system-dependent conversions for arguments list */
+    prepare_app_arguments(&argc, &argv);
+
+    /* parse options */
+    optindex = 1;
+    while (optindex < argc) {
+        opt = argv[optindex++];
+
+        if (handleoptions && opt[0] == '-' && opt[1] != '\0') {
+            if (opt[1] == '-' && opt[2] == '\0') {
+                handleoptions = 0;
+                continue;
+            }
+            opt++;
+
+            if ((ret = parse_option(gc, optctx, opt, argv[optindex], options)) < 0)
+                exit_program(gc, ret);
+            optindex += ret;
+        } else {
+            if (parse_arg_function)
+                parse_arg_function(gc, optctx, opt);
+        }
+    }
+}
+
+static int decode_interrupt_cb(GFFmpegContext *gc)
+{
+    return gc->received_nb_signals > atomic_load(&gc->transcode_init_done);
+}
+
+static const AVClass g_ffmpeg_context_class = {
+        .class_name              = "G_FFMPEG_CONTEXT",
+        .version                 = 0x88888888,
+        .log_level_offset_offset = offsetof(GFFmpegContext, log_level_offset),
+        .category                = G_FFMPEG_CONTEXT_CATEGORY,
+};
+
+GFFmpegContext * g_ffmpeg_context_init() {
+    GFFmpegContext *gc = av_mallocz(sizeof(GFFmpegContext));
+    gc->class = &g_ffmpeg_context_class;
+
+    gc->audio_drift_threshold = 0.1;
+    gc->dts_delta_threshold   = 10;
+    gc->dts_error_threshold   = 3600*30;
+
+    gc->audio_volume      = 256;
+    gc->audio_sync_method = 0;
+    gc->video_sync_method = VSYNC_AUTO;
+    gc->frame_drop_threshold = 0;
+
+    gc->do_deinterlace    = 0;
+    gc->do_benchmark      = 0;
+    gc->do_benchmark_all  = 0;
+    gc->do_hex_dump       = 0;
+    gc->do_pkt_dump       = 0;
+
+    gc->copy_ts           = 0;
+    gc->start_at_zero     = 0;
+    gc->copy_tb           = -1;
+    gc->debug_ts          = 0;
+    gc->exit_on_error     = 0;
+    gc->abort_on_flags    = 0;
+    gc->print_stats       = -1;
+    gc->qp_hist           = 0;
+    gc->stdin_interaction = 1;
+    gc->frame_bits_per_raw_sample = 0;
+
+    gc->max_error_rate  = 2.0/3;
+    gc->filter_nbthreads = 0;
+    gc->filter_complex_nbthreads = 0;
+    gc->vstats_version = 2;
+
+    gc->int_cb.callback = decode_interrupt_cb;
+    gc->int_cb.opaque = gc;
+
+    gc->run_as_daemon  = 0;
+    gc->nb_frames_dup = 0;
+    gc->dup_warning = 1000;
+    gc->nb_frames_drop = 0;
+    gc->want_sdp = 1;
+
+    gc->execute_terminated = 0;
+    gc->received_nb_signals = 0;
+    gc->transcode_init_done = ATOMIC_VAR_INIT(0);
+    gc->ffmpeg_exited = 0;
+    gc->main_return_code = 0;
+
+    gc->intra_only         = 0;
+    gc->file_overwrite     = 0;
+    gc->no_file_overwrite  = 0;
+    gc->do_psnr            = 0;
+    gc->input_sync;
+    gc->input_stream_potentially_available = 0;
+    gc->ignore_unknown_streams = 0;
+    gc->copy_unknown_streams = 0;
+    gc->find_stream_info = 1;
+
+    // probe need
+    gc->show_private_data = 1;
+
+    // add for gfg golang
+    gc->write_packet = 1;
+
+    // GPU
+    gc->use_gpu = 1;
+    gc->gpu_used = 0;
+
+    return gc;
+}
+
+static int setargs(char *args, char **argv)
+{
+    int count = 0;
+
+    while (isspace(*args)) ++args;
+    while (*args) {
+        if (argv) argv[count] = args;
+        while (*args && !isspace(*args)) ++args;
+        if (argv && *args) *args++ = '\0';
+        while (isspace(*args)) ++args;
+        count++;
+    }
+    return count;
+}
+
+char **parsedargs(char *args, int *argc)
+{
+    char **argv = NULL;
+    int    argn = 0;
+
+    if (args && *args
+        && (args = strdup(args))
+        && (argn = setargs(args,NULL))
+        && (argv = malloc((argn+1) * sizeof(char *)))) {
+        *argv++ = args;
+        argn = setargs(args,argv);
+    }
+
+    if (args && !argv) free(args);
+
+    *argc = argn;
+    return argv;
+}
+
+void freeparsedargs(char **argv)
+{
+    if (argv) {
+        free(argv[-1]);
+        free(argv-1);
+    }
+}
+
+int enter_program(GFFmpegContext *gc, int argc, char **argv, int (*main_func)(GFFmpegContext *gc, int argc, char **argv)) {
+    int ret;
+
+    ret = setjmp(gc->_jmp_buf);
+    switch (ret) {
+        case 0:
+            if (main_func) {
+                ret = main_func(gc, argc, argv);
+            }
+            break;
+        case JUMP_BUFFER_SUCCESS:
+            ret = 0;
+            break;
+        default:
+            break;
+    }
+    av_log(NULL, AV_LOG_INFO, "main_func returned with code: %d\n", ret);
+    return ret;
+}

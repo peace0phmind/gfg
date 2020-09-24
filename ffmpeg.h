@@ -422,6 +422,10 @@ typedef struct InputFile {
     int joined;                 /* the thread has been joined */
     int thread_queue_size;      /* maximum number of queued packets */
 #endif
+
+    // merged from probe
+    AVFormatContext *fmt_ctx;
+    InputStream *streams;
 } InputFile;
 
 enum forced_keyframes_const {
@@ -571,7 +575,38 @@ typedef struct BenchmarkTimeStamps {
     int64_t sys_usec;
 } BenchmarkTimeStamps;
 
+typedef struct ReadInterval {
+    int id;             ///< identifier
+    int64_t start, end; ///< start, end in second/AV_TIME_BASE units
+    int has_start, has_end;
+    int start_is_offset, end_is_offset;
+    int duration_frames;
+} ReadInterval;
+
+
+typedef struct WriterContext WriterContext;
+
+typedef struct Writer {
+    const AVClass *priv_class;      ///< private class of the writer, if any
+    int priv_size;                  ///< private size for the writer context
+    const char *name;
+
+    int  (*init)  (WriterContext *wctx);
+    void (*uninit)(WriterContext *wctx);
+
+    void (*print_section_header)(WriterContext *wctx);
+    void (*print_section_footer)(WriterContext *wctx);
+    void (*print_integer)       (WriterContext *wctx, const char *, long long int);
+    void (*print_rational)      (WriterContext *wctx, AVRational *q, char *sep);
+    void (*print_string)        (WriterContext *wctx, const char *, const char *);
+    int flags;                  ///< a combination or WRITER_FLAG_*
+} Writer;
+
+#define G_FFMPEG_CONTEXT_CATEGORY 0x88888888
 struct GFFmpegContext {
+    const AVClass *class;
+    int log_level_offset;
+
     jmp_buf   _jmp_buf;
     void         *user_data;
     AVDictionary *sws_dict;
@@ -674,18 +709,78 @@ struct GFFmpegContext {
     int write_packet;
     void (*cb_write_packet)(GFFmpegContext *gc, AVPacket *pkt);
 
+    // below is merged from probe
+    int do_bitexact;
+    int do_count_frames;
+    int do_count_packets;
+    int do_read_frames ;
+    int do_read_packets;
+    int do_show_chapters;
+    int do_show_error  ;
+    int do_show_format ;
+    int do_show_frames ;
+    int do_show_packets;
+    int do_show_programs;
+    int do_show_streams;
+    int do_show_stream_disposition;
+    int do_show_data   ;
+    int do_show_program_version ;
+    int do_show_library_versions;
+    int do_show_pixel_formats;
+    int do_show_pixel_format_flags;
+    int do_show_pixel_format_components;
+    int do_show_log;
+
+    int do_show_chapter_tags;
+    int do_show_format_tags;
+    int do_show_frame_tags;
+    int do_show_program_tags;
+    int do_show_stream_tags;
+    int do_show_packet_tags;
+
+    int show_value_unit             ;
+    int use_value_prefix            ;
+    int use_byte_value_binary_prefix;
+    int use_value_sexagesimal_format;
+    int show_private_data;
+
+    char *print_format;
+    char *stream_specifier;
+    char *show_data_hash;
+
+    int read_intervals_nb;
+
+    ReadInterval *read_intervals;
+
+    const char *input_filename;
+    const char *print_input_filename;
+    AVInputFormat *iformat;
+
+    struct AVHashContext *hash;
+
+    int nb_streams;
+    uint64_t *nb_streams_packets;
+    uint64_t *nb_streams_frames;
+    int *selected_streams;
+
+#define MAX_REGISTERED_WRITERS_NB 64
+    Writer *registered_writers[MAX_REGISTERED_WRITERS_NB + 1];
+
     // last error info
     int last_error;
 #define LAST_ERROR_BUF_SIZE 256
     char last_error_buf[LAST_ERROR_BUF_SIZE];
     char *last_error_ptr;
+
+    // gpu
+    int use_gpu;
+    int gpu_used;
 };
 
 extern const OptionDef options[];
 extern const HWAccel hwaccels[];
 
 void reset_options(OptionsContext *o, int is_input);
-void show_usage(void);
 
 void opt_output_file(void *optctx, const char *filename);
 
@@ -726,5 +821,6 @@ int hwaccel_decode_init(AVCodecContext *avctx);
 
 GFFmpegContext *g_ffmpeg_context_init();
 int execute_g_ffmpeg(GFFmpegContext *gc, char *cmdline);
+int execute_g_ffprobe(GFFmpegContext *gc, char *cmdline);
 
 #endif /* FFTOOLS_FFMPEG_H */

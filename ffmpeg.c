@@ -330,11 +330,6 @@ static int read_key(void)
     return -1;
 }
 
-static int decode_interrupt_cb(GFFmpegContext *gc)
-{
-    return gc->received_nb_signals > atomic_load(&gc->transcode_init_done);
-}
-
 static void ffmpeg_cleanup(GFFmpegContext *gc, int ret)
 {
     int i, j;
@@ -4670,70 +4665,6 @@ static void log_callback_null(void *ptr, int level, const char *fmt, va_list vl)
 {
 }
 
-GFFmpegContext * g_ffmpeg_context_init() {
-    GFFmpegContext *gc = av_mallocz(sizeof(GFFmpegContext));
-    gc->audio_drift_threshold = 0.1;
-    gc->dts_delta_threshold   = 10;
-    gc->dts_error_threshold   = 3600*30;
-
-    gc->audio_volume      = 256;
-    gc->audio_sync_method = 0;
-    gc->video_sync_method = VSYNC_AUTO;
-    gc->frame_drop_threshold = 0;
-
-    gc->do_deinterlace    = 0;
-    gc->do_benchmark      = 0;
-    gc->do_benchmark_all  = 0;
-    gc->do_hex_dump       = 0;
-    gc->do_pkt_dump       = 0;
-
-    gc->copy_ts           = 0;
-    gc->start_at_zero     = 0;
-    gc->copy_tb           = -1;
-    gc->debug_ts          = 0;
-    gc->exit_on_error     = 0;
-    gc->abort_on_flags    = 0;
-    gc->print_stats       = -1;
-    gc->qp_hist           = 0;
-    gc->stdin_interaction = 1;
-    gc->frame_bits_per_raw_sample = 0;
-
-    gc->max_error_rate  = 2.0/3;
-    gc->filter_nbthreads = 0;
-    gc->filter_complex_nbthreads = 0;
-    gc->vstats_version = 2;
-
-    gc->int_cb.callback = decode_interrupt_cb;
-    gc->int_cb.opaque = gc;
-
-    gc->run_as_daemon  = 0;
-    gc->nb_frames_dup = 0;
-    gc->dup_warning = 1000;
-    gc->nb_frames_drop = 0;
-    gc->want_sdp = 1;
-
-    gc->execute_terminated = 0;
-    gc->received_nb_signals = 0;
-    gc->transcode_init_done = ATOMIC_VAR_INIT(0);
-    gc->ffmpeg_exited = 0;
-    gc->main_return_code = 0;
-
-    gc->intra_only         = 0;
-    gc->file_overwrite     = 0;
-    gc->no_file_overwrite  = 0;
-    gc->do_psnr            = 0;
-    gc->input_sync;
-    gc->input_stream_potentially_available = 0;
-    gc->ignore_unknown_streams = 0;
-    gc->copy_unknown_streams = 0;
-    gc->find_stream_info = 1;
-
-    // add for gfg golang
-    gc->write_packet = 1;
-
-    return gc;
-}
-
 static int _main(GFFmpegContext *gc, int argc, char **argv)
 {
     int i, ret;
@@ -4820,57 +4751,12 @@ static int setargs(char *args, char **argv)
     return count;
 }
 
-static char **parsedargs(char *args, int *argc)
-{
-    char **argv = NULL;
-    int    argn = 0;
-
-    if (args && *args
-        && (args = strdup(args))
-        && (argn = setargs(args,NULL))
-        && (argv = malloc((argn+1) * sizeof(char *)))) {
-        *argv++ = args;
-        argn = setargs(args,argv);
-    }
-
-    if (args && !argv) free(args);
-
-    *argc = argn;
-    return argv;
-}
-
-static void freeparsedargs(char **argv)
-{
-    if (argv) {
-        free(argv[-1]);
-        free(argv-1);
-    }
-}
-
-static int __main(GFFmpegContext *gc, int argc, char **argv) {
-    int ret;
-
-    ret = setjmp(gc->_jmp_buf);
-    switch (ret) {
-        case 0:
-            ret = _main(gc, argc, argv);
-            break;
-        case JUMP_BUFFER_SUCCESS:
-            ret = 0;
-            break;
-        default:
-            break;
-    }
-    av_log(NULL, AV_LOG_INFO, "_main returned with code: %d\n", ret);
-    return ret;
-}
-
 int execute_g_ffmpeg(GFFmpegContext *gc, char *cmdline) {
     int argc = 0;
     char **argv;
     int ret;
     argv = parsedargs(cmdline, &argc);
-    ret = __main(gc, argc, argv);
+    ret = enter_program(gc, argc, argv, _main);
     freeparsedargs(argv);
     return ret;
 }
@@ -4878,7 +4764,7 @@ int execute_g_ffmpeg(GFFmpegContext *gc, char *cmdline) {
 #ifndef USE_FOR_LIB
 int main(int argc, char **argv) {
     GFFmpegContext *gc = g_ffmpeg_context_init();
-    int ret = __main(gc, argc, argv);
+    int ret = enter_program(gc, argc, argv, _main);
     av_free(gc);
     return ret;
 }

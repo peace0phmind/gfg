@@ -3259,7 +3259,6 @@ static int opt_progress(GFFmpegContext *gc, void *optctx, const char *opt, const
 }
 
 #define OFFSET(x) offsetof(OptionsContext, x)
-#define G_OFFSET(x) offsetof(GFFmpegContext, x)
 const OptionDef options[] = {
     /* main options */
     CMDUTILS_COMMON_OPTIONS
