@@ -56,7 +56,7 @@ type StreamInfo struct {
 type FormatInfo struct {
 	FormatName string
 	FileName string
-	streamInfos []*StreamInfo
+	StreamInfos []*StreamInfo
 }
 
 func GetInfo(cmd string) (*FormatInfo, error) {
@@ -87,7 +87,7 @@ func (g *gffprobe) getProbeInfo() *FormatInfo {
 		gsi.Channels = int(si.channels)
 		gsi.Bitrate = int64(si.bitrate)
 
-		fi.streamInfos = append(fi.streamInfos, gsi)
+		fi.StreamInfos = append(fi.StreamInfos, gsi)
 	}
 
 	return fi

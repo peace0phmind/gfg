@@ -16,6 +16,6 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		log.Println(info_json)
+		log.Println(string(info_json))
 	}
 }
