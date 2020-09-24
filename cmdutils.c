@@ -137,10 +137,11 @@ int64_t parse_time_or_die(GFFmpegContext *gc, const char *context, const char *t
                           int is_duration)
 {
     int64_t us;
-    if (av_parse_time(&us, timestr, is_duration) < 0) {
+    int err;
+    if ((err = av_parse_time(&us, timestr, is_duration)) < 0) {
         av_log(NULL, AV_LOG_FATAL, "Invalid %s specification for %s: %s\n",
                is_duration ? "duration" : "date", context, timestr);
-        exit_program(gc, 1);
+        exit_program(gc, err);
     }
     return us;
 }
@@ -579,7 +580,7 @@ static void init_parse_context(GFFmpegContext *gc, OptionParseContext *octx,
     octx->nb_groups = nb_groups;
     octx->groups    = av_mallocz_array(octx->nb_groups, sizeof(*octx->groups));
     if (!octx->groups)
-        exit_program(gc, 1);
+        exit_program(gc, AVERROR(ENOMEM));
 
     for (i = 0; i < octx->nb_groups; i++)
         octx->groups[i].group_def = &groups[i];
@@ -1039,7 +1040,7 @@ void *grow_array(GFFmpegContext *gc, void *array, int elem_size, int *size, int 
         uint8_t *tmp = av_realloc_array(array, new_size, elem_size);
         if (!tmp) {
             av_log(NULL, AV_LOG_ERROR, "Could not alloc buffer.\n");
-            exit_program(gc, 1);
+            exit_program(gc, AVERROR(ENOMEM));
         }
         memset(tmp + *size*elem_size, 0, (new_size-*size) * elem_size);
         *size = new_size;

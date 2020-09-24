@@ -114,7 +114,7 @@ static const char *opt_name_enc_time_bases[]            = {"enc_time_base", NULL
             so = &o->name[i];\
             matches++;\
         } else if (ret < 0)\
-            exit_program(gc, 1);\
+            exit_program(gc, ret);\
     }\
     if (matches > 1)\
        WARN_MULTIPLE_OPT_USAGE(name, type, so, st);\
@@ -636,7 +636,7 @@ static int copy_metadata(GFFmpegContext *gc, char *outspec, char *inspec, AVForm
                 meta_in = &ic->streams[i]->metadata;
                 break;
             } else if (ret < 0)
-                exit_program(gc, 1);
+                exit_program(gc, ret);
         }
         if (!meta_in) {
             av_log(NULL, AV_LOG_FATAL, "Stream specifier %s does not match  any streams.\n", istream_spec);
@@ -650,7 +650,7 @@ static int copy_metadata(GFFmpegContext *gc, char *outspec, char *inspec, AVForm
                 meta_out = &oc->streams[i]->metadata;
                 av_dict_copy(meta_out, *meta_in, AV_DICT_DONT_OVERWRITE);
             } else if (ret < 0)
-                exit_program(gc, 1);
+                exit_program(gc, ret);
         }
     } else
         av_dict_copy(meta_out, *meta_in, AV_DICT_DONT_OVERWRITE);
@@ -735,7 +735,7 @@ static void add_input_streams(GFFmpegContext *gc, OptionsContext *o, AVFormatCon
         const AVOption *discard_opt = av_opt_find(&cc, "skip_frame", NULL, 0, 0);
 
         if (!ist)
-            exit_program(gc, 1);
+            exit_program(gc, AVERROR(ENOMEM));
 
         GROW_ARRAY(gc, gc->input_streams, gc->nb_input_streams);
         gc->input_streams[gc->nb_input_streams - 1] = ist;
@@ -788,13 +788,13 @@ static void add_input_streams(GFFmpegContext *gc, OptionsContext *o, AVFormatCon
         ist->dec_ctx = avcodec_alloc_context3(ist->dec);
         if (!ist->dec_ctx) {
             av_log(NULL, AV_LOG_ERROR, "Error allocating the decoder context.\n");
-            exit_program(gc, 1);
+            exit_program(gc, AVERROR(ENOMEM));
         }
 
         ret = avcodec_parameters_to_context(ist->dec_ctx, par);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error initializing the decoder context.\n");
-            exit_program(gc, 1);
+            exit_program(gc, ret);
         }
 
         if (o->bitexact)
@@ -929,7 +929,7 @@ static void add_input_streams(GFFmpegContext *gc, OptionsContext *o, AVFormatCon
         ret = avcodec_parameters_from_context(par, ist->dec_ctx);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error initializing the decoder context.\n");
-            exit_program(gc, 1);
+            exit_program(gc, ret);
         }
     }
 }
@@ -999,7 +999,7 @@ static void dump_attachment(GFFmpegContext *gc, AVStream *st, const char *filena
     if ((ret = avio_open2(&out, filename, AVIO_FLAG_WRITE, &gc->int_cb, NULL)) < 0) {
         av_log(NULL, AV_LOG_FATAL, "Could not open file %s for writing.\n",
                filename);
-        exit_program(gc, 1);
+        exit_program(gc, ret);
     }
 
     avio_write(out, st->codecpar->extradata, st->codecpar->extradata_size);
@@ -1146,7 +1146,7 @@ static int open_input_file(GFFmpegContext *gc, OptionsContext *o, const char *fi
             av_log(NULL, AV_LOG_FATAL, "%s: could not find codec parameters\n", filename);
             if (ic->nb_streams == 0) {
                 avformat_close_input(&ic);
-                exit_program(gc, 1);
+                exit_program(gc, ret);
             }
         }
     }
@@ -1286,10 +1286,11 @@ static uint8_t *get_line(GFFmpegContext *gc, AVIOContext *s)
     AVIOContext *line;
     uint8_t *buf;
     char c;
+    int err;
 
-    if (avio_open_dyn_buf(&line) < 0) {
+    if ((err = avio_open_dyn_buf(&line)) < 0) {
         av_log(NULL, AV_LOG_FATAL, "Could not alloc buffer for reading preset.\n");
-        exit_program(gc, 1);
+        exit_program(gc, err);
     }
 
     while ((c = avio_r8(s)) && c != '\n')
@@ -1373,7 +1374,7 @@ static OutputStream *new_output_stream(GFFmpegContext *gc, OptionsContext *o, AV
 
     if (!st) {
         av_log(NULL, AV_LOG_FATAL, "Could not alloc stream.\n");
-        exit_program(gc, 1);
+        exit_program(gc, AVERROR(ENOMEM));
     }
 
     if (oc->nb_streams - 1 < o->nb_streamid_map)
@@ -1381,7 +1382,7 @@ static OutputStream *new_output_stream(GFFmpegContext *gc, OptionsContext *o, AV
 
     GROW_ARRAY(gc, gc->output_streams, gc->nb_output_streams);
     if (!(ost = av_mallocz(sizeof(*ost))))
-        exit_program(gc, 1);
+        exit_program(gc, AVERROR(ENOMEM));
     gc->output_streams[gc->nb_output_streams - 1] = ost;
 
     ost->file_index = gc->nb_output_files - 1;
@@ -1394,20 +1395,20 @@ static OutputStream *new_output_stream(GFFmpegContext *gc, OptionsContext *o, AV
     if (ret < 0) {
         av_log(NULL, AV_LOG_FATAL, "Error selecting an encoder for stream "
                "%d:%d\n", ost->file_index, ost->index);
-        exit_program(gc, 1);
+        exit_program(gc, ret);
     }
 
     ost->enc_ctx = avcodec_alloc_context3(ost->enc);
     if (!ost->enc_ctx) {
         av_log(NULL, AV_LOG_ERROR, "Error allocating the encoding context.\n");
-        exit_program(gc, 1);
+        exit_program(gc, AVERROR(ENOMEM));
     }
     ost->enc_ctx->codec_type = type;
 
     ost->ref_par = avcodec_parameters_alloc();
     if (!ost->ref_par) {
         av_log(NULL, AV_LOG_ERROR, "Error allocating the encoding parameters.\n");
-        exit_program(gc, 1);
+        exit_program(gc, AVERROR(ENOMEM));
     }
 
     if (ost->enc) {
@@ -1438,7 +1439,7 @@ static OutputStream *new_output_stream(GFFmpegContext *gc, OptionsContext *o, AV
             av_log(NULL, AV_LOG_FATAL,
                    "Preset %s specified for stream %d:%d, but could not be opened.\n",
                    preset, ost->file_index, ost->index);
-            exit_program(gc, 1);
+            exit_program(gc, ret);
         }
     } else {
         ost->encoder_opts = filter_codec_opts(gc, o->g->codec_opts, AV_CODEC_ID_NONE, oc, st, NULL);
@@ -1488,7 +1489,7 @@ static OutputStream *new_output_stream(GFFmpegContext *gc, OptionsContext *o, AV
         ret = av_bsf_list_parse_str(bsfs, &ost->bsf_ctx);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error parsing bitstream filter sequence '%s': %s\n", bsfs, av_err2str(ret));
-            exit_program(gc, 1);
+            exit_program(gc, ret);
         }
     }
 
@@ -1535,7 +1536,7 @@ static OutputStream *new_output_stream(GFFmpegContext *gc, OptionsContext *o, AV
 
     ost->muxing_queue = av_fifo_alloc(8 * sizeof(AVPacket));
     if (!ost->muxing_queue)
-        exit_program(gc, 1);
+        exit_program(gc, AVERROR(ENOMEM));
 
     return ost;
 }

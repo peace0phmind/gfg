@@ -131,9 +131,10 @@ static char *choose_pix_fmts(GFFmpegContext *gc, OutputFilter *ofilter)
         AVIOContext *s = NULL;
         uint8_t *ret;
         int len;
+        int err;
 
-        if (avio_open_dyn_buf(&s) < 0)
-            exit_program(gc, 1);
+        if ((err = avio_open_dyn_buf(&s)) < 0)
+            exit_program(gc, err);
 
         p = ost->enc->pix_fmts;
         if (ost->enc_ctx->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
@@ -164,9 +165,10 @@ static char *choose_ ## suffix (GFFmpegContext *gc, OutputFilter *ofilter)     \
         AVIOContext *s = NULL;                                                 \
         uint8_t *ret;                                                          \
         int len;                                                               \
+        int err;                                                               \
                                                                                \
-        if (avio_open_dyn_buf(&s) < 0)                                         \
-            exit_program(gc, 1);                                                           \
+        if ((err = avio_open_dyn_buf(&s)) < 0)                                 \
+            exit_program(gc, err);                                             \
                                                                                \
         for (p = ofilter->supported_list; *p != none; p++) {                   \
             get_name(*p);                                                      \
@@ -196,12 +198,12 @@ int init_simple_filtergraph(GFFmpegContext *gc, InputStream *ist, OutputStream *
     FilterGraph *fg = av_mallocz(sizeof(*fg));
 
     if (!fg)
-        exit_program(gc, 1);
+        exit_program(gc, AVERROR(ENOMEM));
     fg->index = gc->nb_filtergraphs;
 
     GROW_ARRAY(gc, fg->outputs, fg->nb_outputs);
     if (!(fg->outputs[0] = av_mallocz(sizeof(*fg->outputs[0]))))
-        exit_program(gc, 1);
+        exit_program(gc, AVERROR(ENOMEM));
     fg->outputs[0]->ost   = ost;
     fg->outputs[0]->graph = fg;
     fg->outputs[0]->format = -1;
@@ -210,14 +212,14 @@ int init_simple_filtergraph(GFFmpegContext *gc, InputStream *ist, OutputStream *
 
     GROW_ARRAY(gc, fg->inputs, fg->nb_inputs);
     if (!(fg->inputs[0] = av_mallocz(sizeof(*fg->inputs[0]))))
-        exit_program(gc, 1);
+        exit_program(gc, AVERROR(ENOMEM));
     fg->inputs[0]->ist   = ist;
     fg->inputs[0]->graph = fg;
     fg->inputs[0]->format = -1;
 
     fg->inputs[0]->frame_queue = av_fifo_alloc(8 * sizeof(AVFrame*));
     if (!fg->inputs[0]->frame_queue)
-        exit_program(gc, 1);
+        exit_program(gc, AVERROR(ENOMEM));
 
     GROW_ARRAY(gc, ist->filters, ist->nb_filters);
     ist->filters[ist->nb_filters - 1] = fg->inputs[0];
@@ -235,9 +237,10 @@ static char *describe_filter_link(GFFmpegContext *gc, FilterGraph *fg, AVFilterI
     int       nb_pads = in ? ctx->nb_inputs   : ctx->nb_outputs;
     AVIOContext *pb;
     uint8_t *res = NULL;
+    int err;
 
-    if (avio_open_dyn_buf(&pb) < 0)
-        exit_program(gc, 1);
+    if ((err = avio_open_dyn_buf(&pb)) < 0)
+        exit_program(gc, err);
 
     avio_printf(pb, "%s", ctx->filter->name);
     if (nb_pads > 1)

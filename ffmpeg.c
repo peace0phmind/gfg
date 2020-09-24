@@ -579,11 +579,11 @@ static void write_packet(GFFmpegContext *gc, OutputFile *of, AVPacket *pkt, Outp
             }
             ret = av_fifo_realloc2(ost->muxing_queue, new_size);
             if (ret < 0)
-                exit_program(gc, 1);
+                exit_program(gc, ret);
         }
         ret = av_packet_make_refcounted(pkt);
         if (ret < 0)
-            exit_program(gc, 1);
+            exit_program(gc, ret);
         av_packet_move_ref(&tmp_pkt, pkt);
         av_fifo_generic_write(ost->muxing_queue, &tmp_pkt, sizeof(tmp_pkt), NULL);
         return;
@@ -734,7 +734,7 @@ finish:
         av_log(NULL, AV_LOG_ERROR, "Error applying bitstream filters to an output "
                "packet for stream #%d:%d.\n", ost->file_index, ost->index);
         if(gc->exit_on_error)
-            exit_program(gc, 1);
+            exit_program(gc, ret);
     }
 }
 
@@ -808,7 +808,7 @@ static void do_audio_out(GFFmpegContext *gc, OutputFile *of, OutputStream *ost,
     return;
 error:
     av_log(NULL, AV_LOG_FATAL, "Audio encoding failed\n");
-    exit_program(gc, 1);
+    exit_program(gc, ret);
 }
 
 static void do_subtitle_out(GFFmpegContext *gc,
@@ -835,7 +835,7 @@ static void do_subtitle_out(GFFmpegContext *gc,
         gc->subtitle_out = av_malloc(subtitle_out_max_size);
         if (!gc->subtitle_out) {
             av_log(NULL, AV_LOG_FATAL, "Failed to allocate subtitle_out\n");
-            exit_program(gc, 1);
+            exit_program(gc, AVERROR(ENOMEM));
         }
     }
 
