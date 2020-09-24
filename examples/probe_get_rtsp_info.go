@@ -6,8 +6,7 @@ import (
 )
 
 func main() {
-	p := gfg.NewGfp("-show_log 1 rtsp://admin:Zyx123456@192.168.1.10")
-	if info, err := p.GetInfo(); err != nil {
+	if info, err := gfg.GetInfo("-show_log 1 rtsp://admin:Zyx123456@192.168.1.10"); err != nil {
 		log.Fatalln(err)
 	} else {
 		log.Println(info)

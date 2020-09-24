@@ -602,6 +602,40 @@ typedef struct Writer {
     int flags;                  ///< a combination or WRITER_FLAG_*
 } Writer;
 
+#define PROBE_FORMAT_NAME_SIZE 128
+#define PROBE_FILE_NAME_SIZE 256
+#define MAX_PROBE_STREAM_INFO_NUMBER 8
+typedef struct {
+    enum AVMediaType media_type;
+    enum AVCodecID     codec_id;
+
+    /**
+     * number of reference frames
+     * - decoding: Set by lavc.
+     */
+    int refs;
+
+    /* video only */
+    enum AVPixelFormat pix_fmt;
+    int width, height;
+    int coded_width, coded_height;
+    int fps;
+
+    /* audio only */
+    enum AVSampleFormat sample_fmt;  ///< sample format
+    int sample_rate; ///< samples per second
+    int channels;    ///< number of audio channels
+    int64_t bitrate;
+
+} Probe_Stream_Info;
+
+typedef struct {
+    char format_name[PROBE_FORMAT_NAME_SIZE];
+    char file_name[PROBE_FILE_NAME_SIZE];
+    int nb_stream_info;
+    Probe_Stream_Info stream_infos[MAX_PROBE_STREAM_INFO_NUMBER];
+} Probe_Format_Info;
+
 #define G_FFMPEG_CONTEXT_CATEGORY 0x88888888
 struct GFFmpegContext {
     const AVClass *class;
@@ -771,6 +805,9 @@ struct GFFmpegContext {
 #define LAST_ERROR_BUF_SIZE 256
     char last_error_buf[LAST_ERROR_BUF_SIZE];
     char *last_error_ptr;
+
+    // probe info
+    Probe_Format_Info format_info;
 
     // gpu
     int use_gpu;
