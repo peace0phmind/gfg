@@ -954,6 +954,70 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
     return ret;
 }
 
+static const char *gpu_decoder_name_suffix[]  = {"_cuvid", "_nvdec", "_mmal", NULL};
+static const char *gpu_encoder_name_suffix[]  = {"_cuvid", "_nvenc", "_omx", NULL};
+
+static AVCodec *_try_auto_use_gpu_by_name(GFFmpegContext *gc, char *name, int is_encoder) {
+    char name_buf[256] = {0};
+
+    if (gc->auto_use_gpu && name) {
+        AVCodec *codec = NULL;
+        if (is_encoder) {
+            for (int i = 0; gpu_encoder_name_suffix[i] != NULL; i++) {
+                strcpy(name_buf, name);
+                strcat(name_buf, gpu_encoder_name_suffix[i]);
+                codec = avcodec_find_encoder_by_name(name_buf);
+                if (codec) {
+                    gc->gpu_auto_used = 1;
+                    return codec;
+                }
+            }
+        } else {
+            for (int i = 0; gpu_decoder_name_suffix[i] != NULL; i++) {
+                strcpy(name_buf, name);
+                strcat(name_buf, gpu_decoder_name_suffix[i]);
+                codec = avcodec_find_decoder_by_name(name_buf);
+                if (codec) {
+                    gc->gpu_auto_used = 1;
+                    return codec;
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
+AVCodec *try_auto_use_gpu_by_name(GFFmpegContext *gc, char *name, int is_encoder) {
+
+    AVCodec *codec = is_encoder ? avcodec_find_encoder_by_name(name)
+                                : avcodec_find_decoder_by_name(name);
+
+    if (gc->auto_use_gpu && codec) {
+        AVCodec *tmp_codec = _try_auto_use_gpu_by_name(gc, codec->name, is_encoder);
+        if (tmp_codec) {
+            return tmp_codec;
+        }
+    }
+
+    return codec;
+}
+
+AVCodec *try_auto_use_gpu_by_codec_id(GFFmpegContext *gc, enum AVCodecID codec_id, int is_encoder) {
+
+    AVCodec *codec = is_encoder ? avcodec_find_encoder(codec_id)
+                                : avcodec_find_decoder(codec_id);
+
+    if (gc->auto_use_gpu && codec) {
+        AVCodec *tmp_codec = _try_auto_use_gpu_by_name(gc, codec->name, is_encoder);
+        if (tmp_codec) {
+            return tmp_codec;
+        }
+    }
+
+    return codec;
+}
+
 AVDictionary *filter_codec_opts(GFFmpegContext *gc, AVDictionary *opts, enum AVCodecID codec_id,
                                 AVFormatContext *s, AVStream *st, AVCodec *codec)
 {
@@ -964,9 +1028,9 @@ AVDictionary *filter_codec_opts(GFFmpegContext *gc, AVDictionary *opts, enum AVC
     char          prefix = 0;
     const AVClass    *cc = avcodec_get_class();
 
-    if (!codec)
-        codec            = s->oformat ? avcodec_find_encoder(codec_id)
-                                      : avcodec_find_decoder(codec_id);
+    if (!codec) {
+        codec = try_auto_use_gpu_by_codec_id(gc, codec_id, s->oformat);
+    }
 
     switch (st->codecpar->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
@@ -1100,10 +1164,10 @@ void parse_options(GFFmpegContext *gc, void *optctx, int argc, char **argv, cons
     }
 }
 
-static int decode_interrupt_cb(GFFmpegContext *gc)
-{
-    return gc->received_nb_signals > atomic_load(&gc->transcode_init_done);
-}
+//static int decode_interrupt_cb(GFFmpegContext *gc)
+//{
+//    return gc->received_nb_signals > atomic_load(&gc->transcode_init_done);
+//}
 
 static const AVClass g_ffmpeg_context_class = {
         .class_name              = "G_FFMPEG_CONTEXT",
@@ -1147,8 +1211,8 @@ GFFmpegContext * g_ffmpeg_context_init() {
     gc->filter_complex_nbthreads = 0;
     gc->vstats_version = 2;
 
-    gc->int_cb.callback = decode_interrupt_cb;
-    gc->int_cb.opaque = gc;
+//    gc->int_cb.callback = decode_interrupt_cb;
+//    gc->int_cb.opaque = gc;
 
     gc->run_as_daemon  = 0;
     gc->nb_frames_dup = 0;
@@ -1158,7 +1222,6 @@ GFFmpegContext * g_ffmpeg_context_init() {
 
     gc->execute_terminated = 0;
     gc->received_nb_signals = 0;
-    gc->transcode_init_done = ATOMIC_VAR_INIT(0);
     gc->ffmpeg_exited = 0;
     gc->main_return_code = 0;
 
@@ -1179,8 +1242,8 @@ GFFmpegContext * g_ffmpeg_context_init() {
     gc->write_packet = 1;
 
     // GPU
-    gc->use_gpu = 1;
-    gc->gpu_used = 0;
+    gc->auto_use_gpu = 0;
+    gc->gpu_auto_used = 0;
 
     return gc;
 }

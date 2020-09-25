@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <signal.h>
-#include <stdatomic.h>
+//#include <stdatomic.h>
 
 #include "cmdutils.h"
 
@@ -722,7 +722,6 @@ struct GFFmpegContext {
 
     volatile int execute_terminated;   // if set to 1, the transcode exit
     volatile int received_nb_signals;
-    atomic_int transcode_init_done;
     volatile int ffmpeg_exited;
     int main_return_code;
 
@@ -810,8 +809,8 @@ struct GFFmpegContext {
     Probe_Format_Info format_info;
 
     // gpu
-    int use_gpu;
-    int gpu_used;
+    int auto_use_gpu;
+    int gpu_auto_used;
 };
 
 extern const OptionDef options[];

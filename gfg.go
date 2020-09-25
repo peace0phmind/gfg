@@ -94,7 +94,7 @@ func (g *Gffmpeg) SetUseGPU(useGPU bool) {
 
 func (g *Gffmpeg) CheckGPUUsed() bool {
 	if g.running && g.gc != nil {
-		return g.gc.gpu_used > 0
+		return g.gc.gpu_auto_used > 0
 	}
 
 	return false
@@ -110,9 +110,9 @@ func (g *Gffmpeg) initGc() {
 	}
 
 	if g.useGPU {
-		g.gc.use_gpu = 1
+		g.gc.auto_use_gpu = 1
 	} else {
-		g.gc.use_gpu = 0
+		g.gc.auto_use_gpu = 0
 	}
 
 	g.setCallback()

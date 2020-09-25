@@ -440,4 +440,7 @@ char **parsedargs(char *args, int *argc);
 void freeparsedargs(char **argv);
 int enter_program(GFFmpegContext *gc, int argc, char **argv, int (*main_func)(GFFmpegContext *gc, int argc, char **argv));
 
+AVCodec *try_auto_use_gpu_by_name(GFFmpegContext *gc, char *name, int is_encoder);
+AVCodec *try_auto_use_gpu_by_codec_id(GFFmpegContext *gc, enum AVCodecID codec_id, int is_encoder);
+
 #endif /* FFTOOLS_CMDUTILS_H */
