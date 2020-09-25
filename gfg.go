@@ -100,6 +100,22 @@ func (g *Gffmpeg) IsGpuAutoUsed() bool {
 	return false
 }
 
+func (g *Gffmpeg) GetGpuDecoderName() string {
+	if g.running && g.gc != nil && g.IsGpuAutoUsed() {
+		return C.GoString(g.gc.gpu_decoder_name)
+	}
+
+	return ""
+}
+
+func (g *Gffmpeg) GetGpuEncoderName() string {
+	if g.running && g.gc != nil && g.IsGpuAutoUsed() {
+		return C.GoString(g.gc.gpu_encoder_name)
+	}
+
+	return ""
+}
+
 func (g *Gffmpeg) initGc() {
 	g.gc = C.g_ffmpeg_context_init()
 

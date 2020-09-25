@@ -959,11 +959,12 @@ static const char *gpu_encoder_name_suffix[]  = {"_cuvid", "_nvenc", "_omx", NUL
 
 static AVCodec *_try_auto_use_gpu_by_name(GFFmpegContext *gc, char *name, int is_encoder) {
     char name_buf[256] = {0};
+    int i;
 
     if (gc->auto_use_gpu && name) {
         AVCodec *codec = NULL;
         if (is_encoder) {
-            for (int i = 0; gpu_encoder_name_suffix[i] != NULL; i++) {
+            for (i = 0; gpu_encoder_name_suffix[i] != NULL; i++) {
                 strcpy(name_buf, name);
                 strcat(name_buf, gpu_encoder_name_suffix[i]);
                 codec = avcodec_find_encoder_by_name(name_buf);
@@ -975,7 +976,7 @@ static AVCodec *_try_auto_use_gpu_by_name(GFFmpegContext *gc, char *name, int is
                 }
             }
         } else {
-            for (int i = 0; gpu_decoder_name_suffix[i] != NULL; i++) {
+            for (i = 0; gpu_decoder_name_suffix[i] != NULL; i++) {
                 strcpy(name_buf, name);
                 strcat(name_buf, gpu_decoder_name_suffix[i]);
                 codec = avcodec_find_decoder_by_name(name_buf);
