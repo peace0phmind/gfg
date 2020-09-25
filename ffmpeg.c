@@ -4697,20 +4697,6 @@ static int _main(GFFmpegContext *gc, int argc, char **argv) {
     return gc->main_return_code;
 }
 
-static int setargs(char *args, char **argv) {
-    int count = 0;
-
-    while (isspace(*args)) ++args;
-    while (*args) {
-        if (argv) argv[count] = args;
-        while (*args && !isspace(*args)) ++args;
-        if (argv && *args) *args++ = '\0';
-        while (isspace(*args)) ++args;
-        count++;
-    }
-    return count;
-}
-
 int execute_g_ffmpeg(GFFmpegContext *gc, char *cmdline) {
     int argc = 0;
     char **argv;

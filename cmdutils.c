@@ -957,7 +957,7 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
 static const char *gpu_decoder_name_suffix[]  = {"_cuvid", "_nvdec", "_mmal", NULL};
 static const char *gpu_encoder_name_suffix[]  = {"_cuvid", "_nvenc", "_omx", NULL};
 
-static AVCodec *_try_auto_use_gpu_by_name(GFFmpegContext *gc, char *name, int is_encoder) {
+static AVCodec *_try_auto_use_gpu_by_name(GFFmpegContext *gc, const char *name, int is_encoder) {
     char name_buf[256] = {0};
     int i;
 
@@ -1034,7 +1034,7 @@ AVDictionary *filter_codec_opts(GFFmpegContext *gc, AVDictionary *opts, enum AVC
     const AVClass    *cc = avcodec_get_class();
 
     if (!codec) {
-        codec = try_auto_use_gpu_by_codec_id(gc, codec_id, s->oformat);
+        codec = try_auto_use_gpu_by_codec_id(gc, codec_id, s->oformat != NULL);
     }
 
     switch (st->codecpar->codec_type) {
@@ -1274,14 +1274,16 @@ char **parsedargs(char *args, int *argc)
     int    argn = 0;
 
     if (args && *args
-        && (args = strdup(args))
+        && (args = av_strdup(args))
         && (argn = setargs(args,NULL))
-        && (argv = malloc((argn+1) * sizeof(char *)))) {
+        && (argv = av_mallocz((argn+1) * sizeof(char *)))) {
         *argv++ = args;
         argn = setargs(args,argv);
     }
 
-    if (args && !argv) free(args);
+    if (args && !argv) {
+        av_free(args);
+    }
 
     *argc = argn;
     return argv;
@@ -1290,8 +1292,8 @@ char **parsedargs(char *args, int *argc)
 void freeparsedargs(char **argv)
 {
     if (argv) {
-        free(argv[-1]);
-        free(argv-1);
+        av_free(argv[-1]);
+        av_free(argv-1);
     }
 }
 
