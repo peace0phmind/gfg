@@ -679,13 +679,10 @@ static AVCodec *find_codec_or_die(GFFmpegContext *gc, const char *name, enum AVM
     const char *codec_string = encoder ? "encoder" : "decoder";
     AVCodec *codec;
 
-    codec = encoder ?
-        avcodec_find_encoder_by_name(name) :
-        avcodec_find_decoder_by_name(name);
+    codec = try_auto_use_gpu_by_name(gc, name, encoder);
 
     if (!codec && (desc = avcodec_descriptor_get_by_name(name))) {
-        codec = encoder ? avcodec_find_encoder(desc->id) :
-                          avcodec_find_decoder(desc->id);
+        codec = try_auto_use_gpu_by_codec_id(gc, desc->id, encoder);
         if (codec)
             av_log(NULL, AV_LOG_VERBOSE, "Matched %s '%s' for codec '%s'.\n",
                    codec_string, codec->name, desc->name);
@@ -712,7 +709,7 @@ static AVCodec *choose_decoder(GFFmpegContext *gc, OptionsContext *o, AVFormatCo
         st->codecpar->codec_id = codec->id;
         return codec;
     } else
-        return avcodec_find_decoder(st->codecpar->codec_id);
+        return try_auto_use_gpu_by_codec_id(gc, st->codecpar->codec_id, 0);
 }
 
 /* Add all the streams from the given input file to the global
@@ -803,7 +800,7 @@ static void add_input_streams(GFFmpegContext *gc, OptionsContext *o, AVFormatCon
         switch (par->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             if(!ist->dec)
-                ist->dec = avcodec_find_decoder(par->codec_id);
+                ist->dec = try_auto_use_gpu_by_codec_id(gc, par->codec_id, 0);
 #if FF_API_LOWRES
             if (st->codec->lowres) {
                 ist->dec_ctx->lowres = st->codec->lowres;
@@ -909,7 +906,7 @@ static void add_input_streams(GFFmpegContext *gc, OptionsContext *o, AVFormatCon
         case AVMEDIA_TYPE_SUBTITLE: {
             char *canvas_size = NULL;
             if(!ist->dec)
-                ist->dec = avcodec_find_decoder(par->codec_id);
+                ist->dec = try_auto_use_gpu_by_codec_id(gc, par->codec_id, 0);
             MATCH_PER_STREAM_OPT(gc, fix_sub_duration, i, ist->fix_sub_duration, ic, st);
             MATCH_PER_STREAM_OPT(gc, canvas_sizes, str, canvas_size, ic, st);
             if (canvas_size &&

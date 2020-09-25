@@ -2829,7 +2829,7 @@ static int open_input_file(GFFmpegContext *gc, InputFile *ifile, const char *fil
             continue;
         }
 
-        codec = avcodec_find_decoder(stream->codecpar->codec_id);
+        codec = try_auto_use_gpu_by_codec_id(gc, stream->codecpar->codec_id, 0);
         if (!codec) {
             av_log(NULL, AV_LOG_WARNING,
                    "Unsupported codec with id %d for input stream %d\n",

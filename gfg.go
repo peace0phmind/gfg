@@ -21,11 +21,11 @@ type Gffmpeg struct {
 	gc          *C.struct_GFFmpegContext
 	running     bool
 	writePacket bool
-	useGPU      bool
+	autoUseGpu  bool
 }
 
 func NewGfg(cmd string) *Gffmpeg {
-	return &Gffmpeg{cmd: cmd, writePacket: true, running: false, useGPU: true}
+	return &Gffmpeg{cmd: cmd, writePacket: true, running: false, autoUseGpu: false}
 }
 
 func NewGfgWithCb(cmd string, writePacket bool, cb interface{}) *Gffmpeg {
@@ -88,11 +88,11 @@ func (g *Gffmpeg) SetCallback(cb interface{}) {
 	g.cb = cb
 }
 
-func (g *Gffmpeg) SetUseGPU(useGPU bool) {
-	g.useGPU = useGPU
+func (g *Gffmpeg) SetAutoUseGpu(autoUseGpu bool) {
+	g.autoUseGpu = autoUseGpu
 }
 
-func (g *Gffmpeg) CheckGPUUsed() bool {
+func (g *Gffmpeg) IsGpuAutoUsed() bool {
 	if g.running && g.gc != nil {
 		return g.gc.gpu_auto_used > 0
 	}
@@ -109,7 +109,7 @@ func (g *Gffmpeg) initGc() {
 		g.gc.write_packet = 0
 	}
 
-	if g.useGPU {
+	if g.autoUseGpu {
 		g.gc.auto_use_gpu = 1
 	} else {
 		g.gc.auto_use_gpu = 0

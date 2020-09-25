@@ -811,6 +811,8 @@ struct GFFmpegContext {
     // gpu
     int auto_use_gpu;
     int gpu_auto_used;
+    const char *gpu_decoder_name;
+    const char *gpu_encoder_name;
 };
 
 extern const OptionDef options[];
