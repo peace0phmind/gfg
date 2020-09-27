@@ -29,7 +29,7 @@ func NewGfg(cmd string) *Gffmpeg {
 }
 
 func NewGfgWithCb(cmd string, writePacket bool, cb interface{}) *Gffmpeg {
-	return &Gffmpeg{cmd: cmd, writePacket: true, cb: cb, running: false}
+	return &Gffmpeg{cmd: cmd, writePacket: writePacket, cb: cb, running: false}
 }
 
 func (g *Gffmpeg) setCallback() {
