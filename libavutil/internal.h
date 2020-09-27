@@ -40,12 +40,12 @@
 #include "config.h"
 #include "attributes.h"
 #include "timer.h"
-//#include "cpu.h"
-//#include "dict.h"
-//#include "macros.h"
-//#include "mem.h"
-//#include "pixfmt.h"
-//#include "version.h"
+#include "cpu.h"
+#include "dict.h"
+#include "macros.h"
+#include "mem.h"
+#include "pixfmt.h"
+#include "version.h"
 
 #if ARCH_X86
 #   include "x86/emms.h"

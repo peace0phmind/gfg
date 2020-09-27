@@ -46,7 +46,7 @@
 #include <mach/mach_time.h>
 #endif
 
-//#include "log.h"
+#include "log.h"
 
 #if   ARCH_AARCH64
 #   include "aarch64/timer.h"
