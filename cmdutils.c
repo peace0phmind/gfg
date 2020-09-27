@@ -971,7 +971,7 @@ static AVCodec *_try_auto_use_gpu_by_name(GFFmpegContext *gc, const char *name, 
                 if (codec) {
                     gc->gpu_auto_used = 1;
                     gc->gpu_encoder_name = codec->name;
-                    av_log(NULL, AV_LOG_INFO, "Try to use gpu to encoder: %s", codec->name);
+                    av_log(NULL, AV_LOG_INFO, "Try to use gpu to encoder: %s\n", codec->name);
                     return codec;
                 }
             }
@@ -983,7 +983,7 @@ static AVCodec *_try_auto_use_gpu_by_name(GFFmpegContext *gc, const char *name, 
                 if (codec) {
                     gc->gpu_auto_used = 1;
                     gc->gpu_decoder_name = codec->name;
-                    av_log(NULL, AV_LOG_INFO, "Try to use gpu to decoder: %s", codec->name);
+                    av_log(NULL, AV_LOG_INFO, "Try to use gpu to decoder: %s\n", codec->name);
                     return codec;
                 }
             }
