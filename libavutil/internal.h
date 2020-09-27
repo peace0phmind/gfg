@@ -39,13 +39,13 @@
 #include <assert.h>
 #include "config.h"
 #include "attributes.h"
-#include "timer.h"
-#include "cpu.h"
-#include "dict.h"
-#include "macros.h"
-#include "mem.h"
-#include "pixfmt.h"
-#include "version.h"
+//#include "timer.h"
+//#include "cpu.h"
+//#include "dict.h"
+//#include "macros.h"
+//#include "mem.h"
+//#include "pixfmt.h"
+//#include "version.h"
 
 #if ARCH_X86
 #   include "x86/emms.h"
@@ -173,7 +173,7 @@
     }\
 }
 
-#include "libm.h"
+//#include "libm.h"
 
 /**
  * Return NULL if CONFIG_SMALL is true, otherwise the argument
